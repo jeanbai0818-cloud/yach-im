@@ -1,6 +1,6 @@
 {
   "id": "yach-im",
-  "version": "2026.6.11-1",
+  "version": "2026.6.11-2",
   "name": "Yach IM",
   "description": "OpenClaw chat channel plugin for Yach.",
   "kind": "channel",
