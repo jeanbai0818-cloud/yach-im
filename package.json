@@ -1,6 +1,6 @@
 {
   "name": "@tal/yach-im",
-  "version": "2026.6.11-2",
+  "version": "2026.6.11-3",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -42,6 +42,7 @@
     "install": {
       "localPath": ".",
       "defaultChoice": "clawhub",
+      "clawhubSpec": "@tal/yach-im",
       "minHostVersion": ">=2026.6.1"
     },
     "compat": {
