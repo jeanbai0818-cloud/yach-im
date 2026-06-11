@@ -1,6 +1,6 @@
 {
   "name": "@tal/yach-im",
-  "version": "2026.6.11-6",
+  "version": "2026.6.11-7",
   "description": "OpenClaw Yach (知音楼) channel plugin — optimized fork",
   "type": "module",
   "main": "./dist/index.js",
