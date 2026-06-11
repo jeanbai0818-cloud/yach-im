@@ -98,6 +98,9 @@ export class YachToolClient {
         }
         // ── scope 预检 ──────────────────────────────────────────────────────
         const requiredScopes = getRequiredScopes(toolAction);
+        if (requiredScopes === null) {
+            throw new Error(`Unregistered tool action: ${toolAction}. Register it in YACH_TOOL_SCOPES before use.`);
+        }
         if (requiredScopes.length > 0) {
             const stored = await getStoredToken(this.account.appKey, userId);
             const grantedScopes = new Set((stored?.scope ?? "").split(/[\s,]+/).filter(Boolean));

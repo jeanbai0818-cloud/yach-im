@@ -51,14 +51,14 @@ export const YACH_TOOL_SCOPES = {
     yach_get_user_by_id: ["directory:userinfo:id"],
     yach_get_user_by_workcode: ["directory:userinfo:workcode"],
     yach_search_user: ["directory:user:search"],
-    yach_im_get_messages: [],
+    yach_im_get_messages: ["im:message:read"],
     yach_im_messages: ["im:message:send", "im:group:send"],
-    yach_robot_groups: [],
+    yach_robot_groups: ["im:robot:group:list"],
     yach_group_create: ["im:group:create"],
     yach_group_add_members: ["im:group_user:add"],
     yach_group_list_members: ["im:group_member:list"],
-    yach_group_remove_members: [],
-    yach_im_message_recall: [],
+    yach_group_remove_members: ["im:group_user:remove"],
+    yach_im_message_recall: ["im:message:recall"],
     yach_weekly_list: ["weekly:list"],
     yach_weekly_draft_get: ["weekly:draft:info"],
     yach_weekly_draft_save: [
@@ -81,9 +81,13 @@ export const YACH_TOOL_SCOPES = {
 };
 /**
  * 查询工具动作所需的 scope 列表。
- * 未注册的 key 返回空数组（不做 scope 预检）。
+ * 已注册但 scope 为空数组的动作视为"不需要额外 scope"（已审计确认）。
+ * 未注册的动作返回 null，调用方应拒绝执行未注册的动作。
  */
 export function getRequiredScopes(toolAction) {
-    return YACH_TOOL_SCOPES[toolAction] ?? [];
+    if (!(toolAction in YACH_TOOL_SCOPES)) {
+        return null;
+    }
+    return YACH_TOOL_SCOPES[toolAction];
 }
 //# sourceMappingURL=tool-scopes.js.map

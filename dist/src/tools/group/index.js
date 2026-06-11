@@ -1,7 +1,11 @@
 /**
- * yach_group — 知音楼群组管理工具（app token）
+ * yach_group — 知音楼群组管理工具（混合鉴权）
  *
  * 支持 action：create / add_members / list_members / remove_members
+ *
+ * 鉴权模式：
+ *   create / add_members / list_members — user token（代表当前用户操作）
+ *   remove_members — app token（应用管理员权限）
  */
 import { Type } from "@sinclair/typebox";
 import { jsonResult } from "openclaw/plugin-sdk/agent-runtime";
