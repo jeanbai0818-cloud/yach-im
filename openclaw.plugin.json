@@ -1,64 +1,46 @@
 {
   "id": "yach-im",
-  "version": "2026.6.11-3",
+  "version": "2026.6.11-4",
   "name": "Yach IM",
-  "description": "OpenClaw chat channel plugin for Yach.",
+  "description": "OpenClaw Yach (知音楼) channel plugin — optimized fork",
   "kind": "channel",
-  "channels": [
-    "yach-im"
-  ],
+  "channels": ["yach"],
+  "skills": ["./skills"],
   "activation": {
     "onStartup": true
   },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
-    "properties": {
-      "defaultAccountId": {
-        "type": "string"
+    "properties": {}
+  },
+  "channelConfigs": {
+    "yach": {
+      "schema": {
+        "type": "object"
       }
     }
   },
-  "channelConfigs": {
-    "yach-im": {
-      "schema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "appKey": {
-            "type": "string"
-          },
-          "appSecret": {
-            "type": "string"
-          },
-          "baseUrl": {
-            "type": "string"
-          },
-          "allowFrom": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "appKey",
-          "appSecret",
-          "baseUrl"
-        ]
-      },
-      "uiHints": {
-        "appKey": {
-          "label": "Yach appKey"
-        },
-        "appSecret": {
-          "label": "Yach appSecret",
-          "sensitive": true
-        },
-        "baseUrl": {
-          "label": "Yach API URL"
-        }
-      }
-    }
+  "contracts": {
+    "tools": [
+      "yach_calendar",
+      "yach_doc_append",
+      "yach_doc_file",
+      "yach_doc_admin",
+      "yach_doc_sheet",
+      "yach_doc_summarize",
+      "yach_space_node",
+      "yach_search_user",
+      "yach_list_teams",
+      "yach_im_get_messages",
+      "yach_im_message_recall",
+      "yach_robot_groups",
+      "yach_weekly",
+      "yach_okr",
+      "yach_topic_publish_post",
+      "yach_topic_publish_comment",
+      "yach_group",
+      "yach_meeting_record_text"
+    ]
   }
 }

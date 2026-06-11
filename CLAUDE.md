@@ -90,18 +90,25 @@ clawhub package publish <tarball>.tgz \
 ## 目录结构
 
 ```text
-dist/                      编译产物
-  index.js                 渠道插件主入口编译文件
-  channel.js               渠道基础能力实现
-  setup-entry.js           setup 入口编译文件
-src/
-  index.ts                 defineChannelPluginEntry
-  channel.ts               createChannelPluginBase + setup 解析
-  setup-entry.ts           defineSetupPluginEntry
-openclaw.plugin.json       渠道插件清单（kind=channel）
-package.json               npm 包与 openclaw 元数据
+dist/                          编译产物（基于 @xes/yach v2.8.2）
+  index.js                     插件入口：注册 channel + tools + commands
+  src/
+    accounts/                  多账号管理
+    card/                      流式消息卡片
+    channel/                   渠道核心（plugin、webhook、sdk、monitor）
+    commands/                  CLI 命令注册
+    core/                      鉴权、yach-client、runtime、logger
+    messaging/
+      inbound/                 入站消息解析、分发、去重、中断检测
+      outbound/                出站队列、回复调度
+    oapi/                      知音楼 Open API 封装（IM、日历、通讯录、文档、会议、OKR…）
+    tools/                     18 个 MCP tool
+    vendor/                    tal-msg-sdk 等内部依赖
+skills/                        13 个 SKILL.md（yach-im、calendar、doc…）
+openclaw.plugin.json           插件清单（kind=channel）
+package.json                   npm 包与 openclaw 元数据
 README.md
-CLAUDE.md                  本文件
+CLAUDE.md                      本文件
 ```
 
 ---
@@ -127,6 +134,6 @@ openclaw logs 2>&1 | grep yach-im
 语法检查：
 ```bash
 node --check dist/index.js
-node --check dist/channel.js
-node --check dist/setup-entry.js
+node --check dist/src/channel/plugin.js
+node --check dist/src/tools/index.js
 ```

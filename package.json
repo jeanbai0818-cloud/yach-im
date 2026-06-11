@@ -1,6 +1,7 @@
 {
   "name": "@tal/yach-im",
-  "version": "2026.6.11-3",
+  "version": "2026.6.11-4",
+  "description": "OpenClaw Yach (知音楼) channel plugin — optimized fork",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -8,22 +9,32 @@
   },
   "files": [
     "dist",
+    "skills",
     "openclaw.plugin.json",
     "README.md",
     "CLAUDE.md",
     "package.json"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "deploy": "openclaw plugins install .",
     "pack": "npm pack"
   },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48",
+    "cos-nodejs-sdk-v5": "^2.15.4",
+    "mammoth": "^1.12.0",
+    "mime-types": "^3.0.2",
+    "node-fetch": "^2.7.0",
+    "pdf-parse": "^1.1.4",
+    "tesseract.js": "^7.0.0",
+    "ws": "^8.19.0",
+    "xlsx": "^0.18.5"
+  },
   "peerDependencies": {
-    "openclaw": ">=2026.3.22"
+    "openclaw": ">=2026.6.1"
   },
   "devDependencies": {
-    "openclaw": "2026.6.1",
-    "typescript": "^5.6.3"
+    "openclaw": "2026.6.1"
   },
   "openclaw": {
     "extensions": [
@@ -32,12 +43,12 @@
     "runtimeExtensions": [
       "./dist/index.js"
     ],
-    "setupEntry": "./dist/setup-entry.js",
-    "runtimeSetupEntry": "./dist/setup-entry.js",
     "channel": {
-      "id": "yach-im",
-      "label": "Yach IM",
-      "blurb": "Connect OpenClaw to Yach instant messaging."
+      "id": "yach",
+      "label": "Yach",
+      "selectionLabel": "Yach (知音楼)",
+      "blurb": "知音楼企业 IM，支持流式 AI 回复。",
+      "order": 80
     },
     "install": {
       "localPath": ".",

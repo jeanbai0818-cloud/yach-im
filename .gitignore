@@ -1,4 +1,4 @@
 node_modules/
-dist/
 *.tgz
 .teable-token.yaml
+*.js.map
