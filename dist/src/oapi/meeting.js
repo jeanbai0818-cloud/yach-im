@@ -1,7 +1,7 @@
 /**
  * YachMeetingApi — 会议 OAPI（user_access_token）
  *
- * 所有接口需要 user_access_token，token 放 Query 参数。
+ * 所有接口需要 user_access_token，token 放 Authorization header。
  * 路径：/openapi/v2/meeting/*
  */
 import { oapiFetch } from "../core/fetch.js";
@@ -21,10 +21,9 @@ export class YachMeetingApi {
     /** 会议录制&速记文本导出（POST /openapi/v2/meeting/tencent/record/text） */
     async getRecordText(params) {
         const token = await this.getToken();
-        const qs = new URLSearchParams({ access_token: token });
-        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/meeting/tencent/record/text?${qs.toString()}`, {
+        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/meeting/tencent/record/text`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({ url: params.url }),
         });
         const text = await res.text();

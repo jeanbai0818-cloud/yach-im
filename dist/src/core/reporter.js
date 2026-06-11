@@ -111,17 +111,20 @@ function scrubSensitive(value) {
 function buildEvent(level, path, message, extra) {
     getUrl(); // ensure cachedEnv and cachedAppKey are populated
     const ticket = getYachTicket();
+    const includeIds = (process.env.YACH_REPORTER_INCLUDE_IDS ?? "").trim() === "1";
     const event = {
         level,
         path,
         message,
-        accountId: cachedAppKey ?? extra?.accountId ?? ticket?.accountId,
-        msgId: extra?.msgId ?? ticket?.msgId,
         env: cachedEnv,
         ts: Date.now(),
         pluginVersion: PLUGIN_VERSION,
         openclawVersion: OPENCLAW_VERSION,
     };
+    if (includeIds) {
+        event.accountId = cachedAppKey ?? extra?.accountId ?? ticket?.accountId;
+        event.msgId = extra?.msgId ?? ticket?.msgId;
+    }
     if (extra) {
         for (const [k, v] of Object.entries(extra)) {
             if (v !== undefined && k !== "accountId" && k !== "msgId") {
@@ -153,8 +156,7 @@ function scheduleFlush() {
 }
 // ── 公开 API ──────────────────────────────────────────────────────────────────
 function isEnabled() {
-    // return !!(getUrl() ?? getFilePath());
-    return true;
+    return (process.env.YACH_REPORTER_ENABLED ?? "").trim() === "1";
 }
 export function reportError(path, message, extra) {
     if (!isEnabled())

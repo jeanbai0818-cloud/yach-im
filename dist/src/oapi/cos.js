@@ -12,7 +12,9 @@ export class YachCosApi {
     }
     async getCredentials(type) {
         const token = await this.getToken();
-        const res = await oapiFetch(`${this.baseUrl}/open/api/sts/get?access_token=${token}&type=${encodeURIComponent(type)}`);
+        const res = await oapiFetch(`${this.baseUrl}/open/api/sts/get?type=${encodeURIComponent(type)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok)
             throw new Error(`[yach-cos] getCredentials failed: HTTP ${res.status}`);
         const data = (await res.json());

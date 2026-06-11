@@ -22,22 +22,22 @@ export class YachImApi {
         let url;
         let body;
         if (isGroup) {
-            url = `${this.baseUrl}/group/robot/message/send?access_token=${token}`;
+            url = `${this.baseUrl}/group/robot/message/send`;
             body = new URLSearchParams({ group_id: toId, message });
         }
         else if (toWorkCode) {
-            url = `${this.baseUrl}/v1/single/message/send?access_token=${token}`;
+            url = `${this.baseUrl}/v1/single/message/send`;
             body = new URLSearchParams({ to_work_code: toWorkCode, message });
         }
         else {
-            url = `${this.baseUrl}/v1/single/message/send?access_token=${token}`;
+            url = `${this.baseUrl}/v1/single/message/send`;
             body = new URLSearchParams({ to_user_id: toId, message });
         }
         const apiPath = isGroup ? "/group/robot/message/send" : "/v1/single/message/send";
         log.debug("sendMessage", { apiPath, toId, msgtype: payload.msgtype });
         const res = await oapiFetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Bearer ${token}` },
             body: body.toString(),
         });
         const resultText = await res.text();
@@ -60,7 +60,6 @@ export class YachImApi {
     async getMessages(params) {
         const token = await this.getToken();
         const qs = new URLSearchParams({
-            access_token: token,
             group_id: params.groupId,
             start_time: String(params.startTime),
             end_time: String(params.endTime),
@@ -70,7 +69,9 @@ export class YachImApi {
             qs.set("descending", String(params.descending));
         if (params.pageToken)
             qs.set("page_token", params.pageToken);
-        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/im/messages?${qs}`);
+        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/im/messages?${qs}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         const data = (await res.json());
         if (data.code !== 200 && data.code !== 0) {
             throw new YachApiError(`[yach-oapi] getMessages error: ${JSON.stringify(data)}`, data.code);
@@ -84,9 +85,9 @@ export class YachImApi {
     /** 获取群基本信息（POST /group/info，form-urlencoded） */
     async getGroupInfo(groupId) {
         const token = await this.getToken();
-        const res = await oapiFetch(`${this.baseUrl}/group/info?access_token=${encodeURIComponent(token)}`, {
+        const res = await oapiFetch(`${this.baseUrl}/group/info`, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Bearer ${token}` },
             body: new URLSearchParams({ group_tid: groupId }).toString(),
         });
         const data = (await res.json());
@@ -102,9 +103,8 @@ export class YachImApi {
         log.debug("recallMessage", { yach_mid });
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/msg/recall`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
-                access_token: token,
                 yach_mid,
             }),
         });

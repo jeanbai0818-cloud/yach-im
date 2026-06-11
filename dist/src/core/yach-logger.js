@@ -30,6 +30,9 @@ function buildPrefix() {
     const ticket = getYachTicket();
     if (!ticket)
         return "yach:";
+    const includeIds = (process.env.YACH_LOG_INCLUDE_IDS ?? "").trim() === "1";
+    if (!includeIds)
+        return "yach:";
     return `yach[${ticket.accountId}][msg:${ticket.msgId}]:`;
 }
 function formatMessage(message, meta) {
@@ -44,6 +47,9 @@ function formatMessage(message, meta) {
 function enrichMeta(meta) {
     const ticket = getYachTicket();
     if (!ticket)
+        return meta ?? {};
+    const includeIds = (process.env.YACH_LOG_INCLUDE_IDS ?? "").trim() === "1";
+    if (!includeIds)
         return meta ?? {};
     const trace = { accountId: ticket.accountId, msgId: ticket.msgId };
     return meta ? { ...trace, ...meta } : trace;

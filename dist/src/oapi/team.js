@@ -1,7 +1,7 @@
 /**
  * YachTeamApi — 用户团队（伙伴） OAPI（user_access_token）
  *
- * 所有接口需要 user_access_token，token 放 URL query 参数。
+ * 所有接口需要 user_access_token，token 放 Authorization header。
  * 路径：/openapi/v2/user/team/*
  */
 import { oapiFetch } from "../core/fetch.js";
@@ -21,8 +21,8 @@ export class YachTeamApi {
     /** 用户团队列表（GET /openapi/v2/user/team/list） */
     async list() {
         const token = await this.getToken();
-        const url = `${this.baseUrl}/openapi/v2/user/team/list?access_token=${encodeURIComponent(token)}`;
-        const res = await oapiFetch(url);
+        const url = `${this.baseUrl}/openapi/v2/user/team/list`;
+        const res = await oapiFetch(url, { headers: { Authorization: `Bearer ${token}` } });
         const text = await res.text();
         let data;
         try {

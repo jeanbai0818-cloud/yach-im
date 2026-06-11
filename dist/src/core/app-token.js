@@ -6,13 +6,16 @@ export async function getAccessToken(baseUrl, cfg) {
     if (cached && cached.expiresAt > Date.now()) {
         return cached.token;
     }
-    const url = `${baseUrl}/gettoken?appkey=${encodeURIComponent(cfg.appKey)}&appsecret=${encodeURIComponent(cfg.appSecret)}`;
-    const res = await oapiFetch(url);
+    const res = await oapiFetch(`${baseUrl}/gettoken`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ appkey: cfg.appKey, appsecret: cfg.appSecret }).toString(),
+    });
     if (!res.ok)
         throw new Error(`[yach-oapi] gettoken failed: HTTP ${res.status}`);
     const data = (await res.json());
     if (data.code !== 200 || !data.obj) {
-        throw new Error(`[yach-oapi] gettoken error: ${JSON.stringify(data)} appkey=${cfg.appKey} appsecret=${cfg.appSecret}`);
+        throw new Error(`[yach-oapi] gettoken error: code=${String(data.code)} msg=${String(data.msg ?? "unknown")}`);
     }
     const { access_token, expired_time } = data.obj;
     // 提前 3 分钟过期，避免边界问题

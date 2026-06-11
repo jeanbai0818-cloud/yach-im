@@ -95,7 +95,12 @@ export async function oapiFetch(url, init, options) {
     const method = init?.method ?? "GET";
     const reqBody = typeof init?.body === "string" ? init.body.slice(0, 1_000_000) : undefined;
     const versionArea = configManager.getVersionArea();
-    log.debug(`${method} ${url} versionArea: ${versionArea}`, reqBody ? { body: reqBody } : undefined);
+    const contentType = getContentType(init?.headers);
+    const rawQuery = url.includes("?") ? url.slice(url.indexOf("?") + 1) : undefined;
+    const queryString = rawQuery ? sanitizeFormBody(rawQuery) : undefined;
+    log.debug(`${method} ${url.split("?")[0]} versionArea: ${versionArea}`, (reqBody || queryString) ? {
+        body: sanitizeBody(reqBody, contentType) ?? queryString,
+    } : undefined);
     const res = await fetch(url, {
         ...init,
         headers: {
@@ -109,9 +114,6 @@ export async function oapiFetch(url, init, options) {
     const bizIgnored = bizErr && options?.ignoreBizCodes?.includes(bizErr.bizCode);
     if (!res.ok || (bizErr && !bizIgnored)) {
         const apiPath = url.split("?")[0];
-        const contentType = getContentType(init?.headers);
-        const rawQuery = url.includes("?") ? url.slice(url.indexOf("?") + 1) : undefined;
-        const queryString = rawQuery ? sanitizeFormBody(rawQuery) : undefined;
         reportError("oapi/fetch", `HTTP ${res.status} ${method} ${apiPath}`, {
             status: String(res.status),
             method,

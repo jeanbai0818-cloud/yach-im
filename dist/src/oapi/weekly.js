@@ -1,7 +1,7 @@
 /**
  * YachWeeklyApi — 周报 OAPI（user_access_token）
  *
- * 所有接口需要 user_access_token，token 放 JSON body。
+ * 所有接口需要 user_access_token，token 放 Authorization header。
  * 路径：/openapi/v2/weekly/*
  */
 import { oapiFetch } from "../core/fetch.js";
@@ -12,10 +12,10 @@ function isOk(code) {
 }
 // ── 内部辅助 ─────────────────────────────────────────────────────────────────
 async function postJson(baseUrl, path, token, body) {
-    const payload = { access_token: token, ...body };
+    const payload = { ...body };
     const res = await oapiFetch(`${baseUrl}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
     });
     const text = await res.text();
@@ -32,13 +32,13 @@ async function postJson(baseUrl, path, token, body) {
     return (data.obj ?? {});
 }
 async function getJson(baseUrl, path, token, params) {
-    const qs = new URLSearchParams({ access_token: token });
+    const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
         qs.set(key, String(value));
     }
     const res = await oapiFetch(`${baseUrl}${path}?${qs.toString()}`, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     });
     const text = await res.text();
     let data;

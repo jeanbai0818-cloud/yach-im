@@ -31,7 +31,6 @@ export class YachTopicApi {
             throw new Error("[yach-oapi] publishPost: text and image cannot both be empty");
         }
         const body = {
-            access_token: token,
             group_id: groupId,
             text: postContent.text || "",
             image: postContent.image || [],
@@ -40,7 +39,7 @@ export class YachTopicApi {
         };
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/squad/doc_send`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const result = (await res.json());
@@ -63,14 +62,13 @@ export class YachTopicApi {
         const token = await this.getToken();
         log.debug("publishComment", { docId, text: commentContent.text });
         const body = {
-            access_token: token,
             doc_id: docId,
             text: commentContent.text,
             at_users: JSON.stringify(commentContent.atUsers || []),
         };
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/squad/doc_comment/send`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const result = (await res.json());

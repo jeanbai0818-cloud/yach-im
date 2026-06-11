@@ -125,11 +125,11 @@ export function monitorChannel(options) {
     }
     const onNetStatus = (data) => {
         try {
-            logger.info("[yach-channel][" + accountId + "] net status change: " + JSON.stringify(data));
             const raw = data !== null && typeof data === "object" ? data : {};
             const statusNum = typeof raw["netStatus"] === "number"
                 ? raw["netStatus"]
                 : typeof raw["status"] === "number" ? raw["status"] : undefined;
+            logger.info("[yach-channel][" + accountId + "] net status change", { status: statusNum });
             if (statusNum === NET_STATUS_CONNECTED) {
                 if (failCount > 0) {
                     logger.info("[yach-channel][" + accountId + "] reconnected successfully, resetting fail count");
@@ -147,11 +147,15 @@ export function monitorChannel(options) {
     };
     const onRecvMsg = (data) => {
         logger.info("[yach-channel][" + accountId + "] recvMsg received");
-        logger.info("[yach-channel][" + accountId + "] recvMsg data: " + JSON.stringify(data));
         try {
             const envelope = (typeof data === "string" ? JSON.parse(data) : data);
             const inner = envelope["data"];
             const message = (typeof inner === "string" ? JSON.parse(inner) : inner);
+            logger.info("[yach-channel][" + accountId + "] recvMsg parsed", {
+                msgId: message?.msgId,
+                msgType: message?.msgtype,
+                conversationType: message?.conversationType,
+            });
             void handleInboundMessage({ message, account, cfg, logger });
         }
         catch (err) {
@@ -159,11 +163,14 @@ export function monitorChannel(options) {
         }
     };
     const onKickout = (data) => {
-        logger.warn("[yach-channel][" + accountId + "] kicked out: " + JSON.stringify(data));
+        logger.warn("[yach-channel][" + accountId + "] kicked out", {
+            code: data?.code,
+            reason: data?.desc ?? data?.msg,
+        });
         scheduleReconnect("kicked out");
     };
     const onAuthResponse = (data) => {
-        logger.info("[yach-channel][" + accountId + "] auth response: " + JSON.stringify(data));
+        logger.info("[yach-channel][" + accountId + "] auth response", { code: data?.code });
         if (data.code !== 0) {
             log.error("[yach-channel][" + accountId + "] 登录失败: 请检查 appKey 和 appSecret 是否正确！！！");
             try {

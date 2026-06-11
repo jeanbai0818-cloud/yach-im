@@ -21,7 +21,9 @@ export class YachRobotApi {
     }
     async listRobotGroups() {
         const token = await this.getToken();
-        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/dify/robot/groups?access_token=${encodeURIComponent(token)}`);
+        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/dify/robot/groups`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         const data = (await res.json());
         const code = Number(data.code ?? data.errcode ?? 0);
         if (!res.ok || !isOk(code)) {

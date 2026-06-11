@@ -19,7 +19,6 @@ export class YachExpressionApi {
         const token = await this.getToken();
         const expressionSessionType = sessionType === "2" ? "1" : "0";
         const body = new URLSearchParams({
-            access_token: token,
             session_type: expressionSessionType,
             msg_id: msgId,
             expression,
@@ -31,7 +30,7 @@ export class YachExpressionApi {
         log.debug("toggle", { msgId, expression, sessionType: expressionSessionType });
         const res = await oapiFetch(`${this.baseUrl}/message/expression/add`, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Bearer ${token}` },
             body: body.toString(),
         });
         const result = (await res.json());

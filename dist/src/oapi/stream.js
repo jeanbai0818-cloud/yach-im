@@ -13,7 +13,6 @@ export class YachStreamApi {
         const token = await this.getToken();
         const url = `${this.baseUrl}/openapi/v2/msg_card/create`;
         const body = {
-            access_token: token,
             to_id: toId,
             session_type: parseInt(sessionType),
         };
@@ -23,7 +22,7 @@ export class YachStreamApi {
         log.debug("createCard", { toId, sessionType, replyToMessageId });
         const res = await oapiFetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const result = (await res.json());
@@ -36,10 +35,10 @@ export class YachStreamApi {
     async push(msgId, content) {
         const token = await this.getToken();
         const url = `${this.baseUrl}/openapi/v2/msg_content/push`;
-        const body = { access_token: token, msg_id: msgId, msg_content: content };
+        const body = { msg_id: msgId, msg_content: content };
         const res = await oapiFetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const result = (await res.json());
@@ -51,11 +50,11 @@ export class YachStreamApi {
     async close(msgId) {
         const token = await this.getToken();
         const url = `${this.baseUrl}/openapi/v2/msg_card/close`;
-        const body = { access_token: token, msg_id: msgId };
+        const body = { msg_id: msgId };
         log.debug("close", { msgId });
         const res = await oapiFetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const result = (await res.json());

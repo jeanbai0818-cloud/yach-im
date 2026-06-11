@@ -48,13 +48,9 @@ export async function processMessage(params) {
     log.info("dispatching to agent", { accountId: account.accountId, session: route.sessionKey });
     reportEvent("inbound.dispatch", "dispatching to agent", {
         accountId: account.accountId,
-        msgId,
-        senderId,
-        senderName,
-        chatId,
-        chatType: isGroup ? "group" : "direct",
-        agentId: route.agentId,
-        sessionKey: route.sessionKey,
+        source: "inbound",
+        action: "dispatch.start",
+        result: "accepted",
         msgType: message.msgtype,
     });
     const rawBody = isGroup
@@ -122,7 +118,7 @@ export async function processMessage(params) {
         resolveCommandAuthorizedFromAuthorizers: core.channel.commands.resolveCommandAuthorizedFromAuthorizers,
     });
     if (commandAuthorized === false) {
-        log.info("command blocked for unauthorized sender", { accountId: account.accountId, senderId, body: rawBody.slice(0, 80) });
+        log.info("command blocked for unauthorized sender", { accountId: account.accountId });
         return;
     }
     const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(cfg);
@@ -182,13 +178,9 @@ export async function processMessage(params) {
         log.info("dispatch complete", { accountId: account.accountId, queuedFinal, replies: counts.final });
         reportEvent("inbound.dispatch", "dispatch complete", {
             accountId: account.accountId,
-            msgId,
-            senderId,
-            senderName,
-            chatId,
-            chatType: isGroup ? "group" : "direct",
-            agentId: route.agentId,
-            replies: String(counts.final),
+            source: "inbound",
+            action: "dispatch.complete",
+            result: "success",
             msgType: message.msgtype,
         });
     }

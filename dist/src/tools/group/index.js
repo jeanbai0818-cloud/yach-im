@@ -37,7 +37,7 @@ export function createGroupTool() {
     return {
         name: "yach_group",
         label: "知音楼群组管理",
-        description: "知音楼群组管理（使用 app token）：" +
+        description: "知音楼群组管理（混合鉴权：create/add_members/list_members 使用 user token；remove_members 使用 app token）：" +
             "create 创建群；add_members 添加群成员；list_members 获取群成员列表；remove_members 删除群成员。" +
             "群成员数量限制：最多1000人。",
         parameters: GroupSchema,

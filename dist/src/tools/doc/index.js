@@ -14,7 +14,7 @@
  *   向文档末尾追加内容
  */
 import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { extname, resolve } from "node:path";
 import { Type } from "@sinclair/typebox";
 import { jsonResult } from "openclaw/plugin-sdk/agent-runtime";
 import { createYachToolClient } from "../../core/tool-client.js";
@@ -67,6 +67,14 @@ const EXT_TO_MIME = {
     ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ".xmind": "application/octet-stream",
 };
+function isPathAllowed(filePath) {
+    const raw = (process.env.YACH_ALLOWED_LOCAL_PATHS ?? "").trim();
+    if (!raw)
+        return false;
+    const abs = resolve(filePath);
+    const roots = raw.split(",").map((v) => v.trim()).filter(Boolean).map((v) => resolve(v));
+    return roots.some((root) => abs === root || abs.startsWith(root + "/"));
+}
 // ── yach_doc_file ─────────────────────────────────────────────────────────
 const DocFileSchema = Type.Object({
     action: StringEnum(["create_blank", "import", "export"], {
@@ -83,6 +91,7 @@ const DocFileSchema = Type.Object({
     // export
     file_url: Type.Optional(Type.String({ description: "文档链接（export 必填）" })),
     format: Type.Optional(StringEnum(["pdf", "docx", "md", "jpg", "xlsx", "pptx", "jpeg", "xmind"], { description: "导出格式（export 必填）。文档: pdf/docx/jpg/md；表格: xlsx；幻灯片: pptx/pdf；脑图: jpeg/xmind" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险操作确认。import/export 必须传 true 才会执行。" })),
 });
 export function createDocFileTool() {
     return {
@@ -110,6 +119,9 @@ export function createDocFileTool() {
                         return jsonResult(result);
                     }
                     case "import": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "import: 该操作会上传本地或提供的内容到远端文档系统。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         if (!params.file_path && !params.content) {
                             return jsonResult({ ok: false, error: "import: file_path 或 content 必填其一" });
                         }
@@ -121,6 +133,9 @@ export function createDocFileTool() {
                             }
                             filename = params.filename;
                             if (params.file_path) {
+                                if (!isPathAllowed(params.file_path)) {
+                                    throw new Error("import: file_path 不在允许目录内。请设置环境变量 YACH_ALLOWED_LOCAL_PATHS（逗号分隔绝对路径白名单）。");
+                                }
                                 fileBuffer = await readFile(params.file_path);
                             }
                             else {
@@ -139,6 +154,9 @@ export function createDocFileTool() {
                         return jsonResult(result);
                     }
                     case "export": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "export: 该操作会生成可下载导出链接。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         if (!params.file_url || !params.format) {
                             return jsonResult({ ok: false, error: "export: file_url、format 导出格式为必填（文档: pdf/docx/jpg/md；表格: xlsx；幻灯片: pptx/pdf；脑图: jpeg/xmind）" });
                         }
@@ -169,6 +187,7 @@ const DocAdminSchema = Type.Object({
     collaborator_work_codes: Type.Optional(Type.Array(Type.String({ description: "协作者工号列表（remove_collaborator 必填）" }))),
     collaborator_dept_ids: Type.Optional(Type.Array(Type.Number({ description: "协作者部门ID列表（remove_collaborator 可选）" }))),
     depart_id: Type.Optional(Type.Number({ description: "管理员部门ID（remove_admin 可选）" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险权限变更确认。必须传 true 才会执行。" })),
 });
 export function createDocAdminTool() {
     return {
@@ -183,6 +202,9 @@ export function createDocAdminTool() {
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
             const client = createYachToolClient();
+            if (params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "文档权限变更为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             try {
                 switch (params.action) {
                     case "add_collaborator": {

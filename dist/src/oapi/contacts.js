@@ -17,11 +17,11 @@ export class YachContactsApi {
         this.baseUrl = baseUrl;
         this.getToken = getToken;
     }
-    /** 按 userId 获取用户详情（GET /user/get?access_token=&userid=） */
+    /** 按 userId 获取用户详情（GET /user/get?userid=） */
     async getUserById(userId) {
         const token = await this.getToken();
-        const url = `${this.baseUrl}/user/get?access_token=${encodeURIComponent(token)}&userid=${encodeURIComponent(userId)}`;
-        const res = await oapiFetch(url);
+        const url = `${this.baseUrl}/user/get?userid=${encodeURIComponent(userId)}`;
+        const res = await oapiFetch(url, { headers: { Authorization: `Bearer ${token}` } });
         const text = await res.text();
         let data;
         try {
@@ -39,10 +39,10 @@ export class YachContactsApi {
     async searchUsers(keyword) {
         const token = await this.getToken();
         const url = `${this.baseUrl}/openapi/v2/user/search`;
-        const body = JSON.stringify({ access_token: token, keyword });
+        const body = JSON.stringify({ keyword });
         const res = await oapiFetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body,
         });
         const text = await res.text();
@@ -63,11 +63,11 @@ export class YachContactsApi {
             nameEn: u.name_en,
         }));
     }
-    /** 按工号获取用户详情（GET /user/get_by_workcode?access_token=&work_code=） */
+    /** 按工号获取用户详情（GET /user/get_by_workcode?work_code=） */
     async getUserByWorkCode(workCode) {
         const token = await this.getToken();
-        const url = `${this.baseUrl}/user/get_by_workcode?access_token=${encodeURIComponent(token)}&work_code=${encodeURIComponent(workCode)}`;
-        const res = await oapiFetch(url);
+        const url = `${this.baseUrl}/user/get_by_workcode?work_code=${encodeURIComponent(workCode)}`;
+        const res = await oapiFetch(url, { headers: { Authorization: `Bearer ${token}` } });
         const text = await res.text();
         let data;
         try {

@@ -2,6 +2,35 @@ import { getYachRuntime, getYachConfig } from "../../core/runtime.js";
 import { oapiFetch } from "../../core/fetch.js";
 import { yachLogger } from "../../core/yach-logger.js";
 const log = yachLogger("messaging/callback");
+function parseAllowedHosts() {
+    const raw = (process.env.YACH_CALLBACK_ALLOWED_HOSTS ?? "").trim();
+    if (!raw)
+        return [];
+    return raw.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+}
+function isCallbackUrlAllowed(callbackUrl) {
+    try {
+        const u = new URL(callbackUrl);
+        if (!["https:", "http:"].includes(u.protocol))
+            return false;
+        const allowHosts = parseAllowedHosts();
+        if (allowHosts.length === 0)
+            return false;
+        return allowHosts.includes(u.hostname.toLowerCase());
+    }
+    catch {
+        return false;
+    }
+}
+function redactCallbackUrl(callbackUrl) {
+    try {
+        const u = new URL(callbackUrl);
+        return `${u.protocol}//${u.host}${u.pathname}`;
+    }
+    catch {
+        return "[invalid-callback-url]";
+    }
+}
 function mergePartialAssistantText(previous, payload) {
     const text = typeof payload.text === "string" ? payload.text : "";
     const delta = typeof payload.delta === "string" ? payload.delta : "";
@@ -45,7 +74,11 @@ export async function handleCallbackMessage(params) {
         log.error("[yach] callback message missing callback_url, unique_key, or callback_mode");
         return;
     }
-    logger.info("[yach] handling callback message, callback_url: " + callbackUrl + ", unique_key: " + uniqueKey + ", mode: " + callbackMode);
+    if (!isCallbackUrlAllowed(callbackUrl)) {
+        log.error("[yach] callback URL blocked by allowlist", { callbackUrl: redactCallbackUrl(callbackUrl) });
+        return;
+    }
+    logger.info("[yach] handling callback message, callback_url: " + redactCallbackUrl(callbackUrl) + ", unique_key: " + uniqueKey + ", mode: " + callbackMode);
     const mode = callbackMode || "full";
     const sendToUser = isGroup ? `group:${conversationId}` : `user:${senderId}`;
     const rawBody = message.content;

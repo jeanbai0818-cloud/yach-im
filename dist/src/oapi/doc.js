@@ -1,9 +1,7 @@
 /**
  * YachDocApi — 文档 OAPI
  *
- * 使用 app_access_token：
- *   - GET 请求：token 放 URL query
- *   - POST JSON 请求：token 放 JSON body
+ * 使用 app_access_token（Authorization: Bearer）。
  *
  * createDoc（COS 上传 → 异步导入）由 tool 层调用 client.cos.upload() 后，
  * 再调用 importAsync() + pollImport()。
@@ -31,8 +29,8 @@ function extractGuidFromUrl(urlOrGuid) {
         return null;
     }
 }
-function buildDocQs(token, loc) {
-    const qs = new URLSearchParams({ access_token: token });
+function buildDocQs(loc) {
+    const qs = new URLSearchParams();
     if (loc.fileUrl)
         qs.set("file_url", loc.fileUrl);
     if (loc.guid)
@@ -52,8 +50,10 @@ export class YachDocApi {
     /** 读取文档 Markdown（GET /openapi/v2/doc/content/md） */
     async readMarkdown(loc) {
         const token = await this.getToken();
-        const qs = buildDocQs(token, loc);
-        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/content/md?${qs}`);
+        const qs = buildDocQs(loc);
+        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/content/md?${qs}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         const data = (await res.json());
         const result = (data.result ?? data.obj);
         if (!isOk(normalizeCode(data)) || !result) {
@@ -64,8 +64,10 @@ export class YachDocApi {
     /** 读取文档纯文本（GET /openapi/v2/doc/content） */
     async readText(loc) {
         const token = await this.getToken();
-        const qs = buildDocQs(token, loc);
-        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/content?${qs}`);
+        const qs = buildDocQs(loc);
+        const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/content?${qs}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         const data = (await res.json());
         const result = (data.result ?? data.obj);
         if (!isOk(normalizeCode(data)) || !result) {
@@ -76,14 +78,14 @@ export class YachDocApi {
     /** 创建空白文档（POST /openapi/v2/doc/add） */
     async createBlank(params) {
         const token = await this.getToken();
-        const body = { access_token: token, type: params.type };
+        const body = { type: params.type };
         if (params.name)
             body.name = params.name;
         if (params.folder)
             body.folder = params.folder;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/add`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -95,7 +97,7 @@ export class YachDocApi {
     /** 向文档末尾追加内容（POST /openapi/v2/doc/content/append） */
     async append(params) {
         const token = await this.getToken();
-        const body = { access_token: token, content: params.content };
+        const body = { content: params.content };
         if (params.fileUrl)
             body.file_url = params.fileUrl;
         if (params.guid)
@@ -104,7 +106,7 @@ export class YachDocApi {
             body.kn_node_id = params.knNodeId;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/content/append`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -115,7 +117,6 @@ export class YachDocApi {
     async importAsync(params) {
         const token = await this.getToken();
         const body = {
-            access_token: token,
             file_url: params.cosUrl,
             type: params.type,
         };
@@ -123,7 +124,7 @@ export class YachDocApi {
             body.folder = params.folder;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/import/async`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -140,7 +141,9 @@ export class YachDocApi {
         const token = await this.getToken();
         for (let i = 0; i < 15; i++) {
             await new Promise((r) => setTimeout(r, 2000));
-            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/import/async/process?access_token=${encodeURIComponent(token)}&task_id=${taskId}`);
+            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/import/async/process?task_id=${taskId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             const data = (await res.json());
             if (isOk(normalizeCode(data)) && data.obj?.data?.progress === 100) {
                 return { fileUrl: data.obj.data.file_url ?? "" };
@@ -154,8 +157,8 @@ export class YachDocApi {
         const fileGuid = extractGuidFromUrl(fileUrl) ?? fileUrl;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/export/async`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token: token, file_guid: fileGuid, type: format }),
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ file_guid: fileGuid, type: format }),
         });
         const data = (await res.json());
         if (!isOk(normalizeCode(data)) || !data.obj?.task_id) {
@@ -171,8 +174,10 @@ export class YachDocApi {
         const token = await this.getToken();
         for (let i = 0; i < 15; i++) {
             await new Promise((r) => setTimeout(r, 2000));
-            const qs = new URLSearchParams({ access_token: token, task_id: taskId });
-            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/export/async/process?${qs}`);
+            const qs = new URLSearchParams({ task_id: taskId });
+            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/export/async/process?${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             const data = (await res.json());
             if (!isOk(normalizeCode(data)))
                 throw new Error(`[yach-doc] queryExportProgress error: ${JSON.stringify(data)}`);
@@ -186,7 +191,6 @@ export class YachDocApi {
     async loreImportAsync(params) {
         const token = await this.getToken();
         const body = {
-            access_token: token,
             file_url: params.fileUrl,
             title: params.title,
             node_type: params.nodeType,
@@ -201,7 +205,7 @@ export class YachDocApi {
             body.parent_node_url = params.parentNodeUrl;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/import/async`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -218,8 +222,10 @@ export class YachDocApi {
         const token = await this.getToken();
         for (let i = 0; i < 15; i++) {
             await new Promise((r) => setTimeout(r, 2000));
-            const qs = new URLSearchParams({ access_token: token, task_id: taskId, node_type: nodeType });
-            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/import/async/process?${qs}`);
+            const qs = new URLSearchParams({ task_id: taskId, node_type: nodeType });
+            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/import/async/process?${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             const data = (await res.json());
             if (isOk(normalizeCode(data)) && data.obj?.progress === 100) {
                 return { fileUrl: data.obj.file_url ?? "" };
@@ -231,7 +237,6 @@ export class YachDocApi {
     async loreNodeExportAsync(params) {
         const token = await this.getToken();
         const body = {
-            access_token: token,
             type: params.format,
         };
         if (params.knNodeId)
@@ -240,7 +245,7 @@ export class YachDocApi {
             body.kn_node_url = params.knNodeUrl;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/export/async`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -257,8 +262,10 @@ export class YachDocApi {
         const token = await this.getToken();
         for (let i = 0; i < 15; i++) {
             await new Promise((r) => setTimeout(r, 2000));
-            const qs = new URLSearchParams({ access_token: token, task_id: taskId });
-            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/export/progress?${qs}`);
+            const qs = new URLSearchParams({ task_id: taskId });
+            const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/export/progress?${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             const data = (await res.json());
             if (!isOk(normalizeCode(data)))
                 throw new Error(`[yach-doc] pollLoreNodeExport error: ${JSON.stringify(data)}`);
@@ -271,14 +278,14 @@ export class YachDocApi {
     /** 覆盖写表格区域（POST /openapi/v2/doc/sheet/update） */
     async sheetUpdate(params) {
         const token = await this.getToken();
-        const body = { access_token: token, range: params.range, resource: { values: params.values } };
+        const body = { range: params.range, resource: { values: params.values } };
         if (params.fileUrl)
             body.file_url = params.fileUrl;
         if (params.guid)
             body.guid = params.guid;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/sheet/update`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -288,14 +295,14 @@ export class YachDocApi {
     /** 追加表格行（POST /openapi/v2/doc/sheet/added） */
     async sheetAppend(params) {
         const token = await this.getToken();
-        const body = { access_token: token, range: params.range, resource: { values: params.values } };
+        const body = { range: params.range, resource: { values: params.values } };
         if (params.guid)
             body.guid = params.guid;
         else if (params.fileUrl)
             body.file_url = params.fileUrl;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/sheet/added`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -307,8 +314,8 @@ export class YachDocApi {
         const token = await this.getToken();
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/del`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token: token, file_url: fileUrl }),
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ file_url: fileUrl }),
         });
         const data = (await res.json());
         if (!isOk(normalizeCode(data)))
@@ -320,9 +327,8 @@ export class YachDocApi {
         const guid = extractGuidFromUrl(fileUrlOrGuid) ?? fileUrlOrGuid;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/collaborator/add`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
-                access_token: token,
                 guid,
                 collaborators: [{ work_code: workCode, role, user_type: 0 }],
             }),
@@ -336,8 +342,8 @@ export class YachDocApi {
         const token = await this.getToken();
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/admin/add`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token: token, file_url: fileUrl, admin_work_code: adminWorkCode }),
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ file_url: fileUrl, admin_work_code: adminWorkCode }),
         });
         const data = (await res.json());
         if (!isOk(normalizeCode(data)))
@@ -347,7 +353,7 @@ export class YachDocApi {
     async removeCollaborator(params) {
         const token = await this.getToken();
         const guid = params.fileUrlOrGuid ? extractGuidFromUrl(params.fileUrlOrGuid) ?? params.fileUrlOrGuid : undefined;
-        const body = { access_token: token };
+        const body = {};
         if (guid)
             body.guid = guid;
         if (params.fileUrlOrGuid && !guid)
@@ -358,7 +364,7 @@ export class YachDocApi {
             body.collaborator_dept_ids = params.collaboratorDeptIds;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/collaborator/del`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -369,7 +375,7 @@ export class YachDocApi {
     async removeAdmin(params) {
         const token = await this.getToken();
         const guid = params.fileUrlOrGuid ? extractGuidFromUrl(params.fileUrlOrGuid) ?? params.fileUrlOrGuid : undefined;
-        const body = { access_token: token };
+        const body = {};
         if (guid)
             body.guid = guid;
         if (params.fileUrlOrGuid && !guid)
@@ -380,7 +386,7 @@ export class YachDocApi {
             body.depart_id = params.departId;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/doc/admin/del`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -495,7 +501,7 @@ export class YachDocApi {
      */
     async loreNodeProperties(params) {
         const token = await this.getToken();
-        const body = { access_token: token };
+        const body = {};
         if (params.topicId)
             body.topic_id = params.topicId;
         if (params.nodeId)
@@ -506,7 +512,7 @@ export class YachDocApi {
             body.url = params.url;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/properties`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -541,7 +547,7 @@ export class YachDocApi {
      */
     async loreNodeMove(params) {
         const token = await this.getToken();
-        const body = { access_token: token };
+        const body = {};
         if (params.sourceNodeUrl)
             body.source_node_url = params.sourceNodeUrl;
         if (params.sourceTopicId)
@@ -556,7 +562,7 @@ export class YachDocApi {
             body.target_node_id = params.targetNodeId;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/move`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -576,7 +582,6 @@ export class YachDocApi {
     async loreNodeCreate(params) {
         const token = await this.getToken();
         const body = {
-            access_token: token,
             node_type: params.nodeType,
         };
         if (params.name)
@@ -589,7 +594,7 @@ export class YachDocApi {
             body.parent_node_url = params.parentNodeUrl;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/create`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -609,7 +614,7 @@ export class YachDocApi {
      */
     async loreNodeSetProperties(params) {
         const token = await this.getToken();
-        const body = { access_token: token };
+        const body = {};
         if (params.topicId)
             body.topic_id = params.topicId;
         if (params.nodeId)
@@ -626,7 +631,7 @@ export class YachDocApi {
             body.share_mode = params.shareMode;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/properties/update`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());
@@ -641,7 +646,7 @@ export class YachDocApi {
      */
     async loreNodeList(params) {
         const token = await this.getToken();
-        const body = { access_token: token };
+        const body = {};
         if (params.knNodeId)
             body.kn_node_id = params.knNodeId;
         if (params.knNodeUrl)
@@ -656,7 +661,7 @@ export class YachDocApi {
             body.page_size = params.pageSize;
         const res = await oapiFetch(`${this.baseUrl}/openapi/v2/lore/node/list`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
         const data = (await res.json());

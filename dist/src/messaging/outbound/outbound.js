@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { extname, basename } from "node:path";
+import { extname, basename, resolve } from "node:path";
 import { YachClient } from "../../core/yach-client.js";
 import { getYachRuntime } from "../../core/runtime.js";
 import { resolveYachAccountByBotId } from "../../accounts/index.js";
@@ -68,6 +68,14 @@ function detectContentType(filePath) {
     };
     return map[ext] ?? "application/octet-stream";
 }
+function isAllowedLocalMediaPath(filePath) {
+    const raw = (process.env.YACH_ALLOWED_LOCAL_PATHS ?? "").trim();
+    if (!raw)
+        return false;
+    const abs = resolve(filePath);
+    const roots = raw.split(",").map((v) => v.trim()).filter(Boolean).map((v) => resolve(v));
+    return roots.some((root) => abs === root || abs.startsWith(root + "/"));
+}
 export const yachOutbound = {
     deliveryMode: "direct",
     chunkerMode: "markdown",
@@ -99,6 +107,9 @@ export const yachOutbound = {
             });
         }
         if (mediaUrl) {
+            if (!isAllowedLocalMediaPath(mediaUrl)) {
+                throw new Error("[yach-outbound] mediaUrl path is not allowed. Set YACH_ALLOWED_LOCAL_PATHS to permit specific local directories.");
+            }
             const kind = detectMediaKind(mediaUrl);
             const filename = basename(mediaUrl) || "file";
             const contentType = detectContentType(mediaUrl);

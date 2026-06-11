@@ -1,7 +1,7 @@
 /**
  * YachCalendarApi — 日历 OAPI
  *
- * 全部走 user_access_token，token 放 JSON body。
+ * 全部走 user_access_token，token 放 Authorization header。
  * 路径：/openapi/v2/schedule/*
  * 时间：Unix 时间戳（秒）
  */
@@ -13,10 +13,10 @@ function isOk(code) {
 }
 // ── 内部辅助 ─────────────────────────────────────────────────────────────────
 async function postJson(baseUrl, path, token, body) {
-    const payload = { access_token: token, ...body };
+    const payload = { ...body };
     const res = await oapiFetch(`${baseUrl}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
     });
     const text = await res.text();
