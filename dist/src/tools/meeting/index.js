@@ -22,6 +22,7 @@ const MeetingRecordTextSchema = Type.Object({
     url: Type.String({
         description: "会议录制或速记的链接 URL",
     }),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险读取确认。读取会议全文必须传 true 才会执行。" })),
 });
 export function createMeetingRecordTextTool() {
     return {
@@ -37,6 +38,9 @@ export function createMeetingRecordTextTool() {
             try {
                 switch (params.action) {
                     case "get_text": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "读取会议全文为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         const result = await client.invoke("yach_meeting_record_text", (c) => c.meeting.getRecordText({ url: params.url }), { as: "user" });
                         const typeLabel = URL_TYPE_LABEL[result.url_type] ?? `未知类型(${result.url_type})`;
                         return jsonResult({

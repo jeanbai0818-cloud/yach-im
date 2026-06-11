@@ -30,6 +30,14 @@ import { jsonResult } from "openclaw/plugin-sdk/agent-runtime";
 import { createYachToolClient } from "../../core/tool-client.js";
 import { handleInvokeErrorWithAutoAuth } from "../auto-auth.js";
 import { StringEnum } from "../helpers.js";
+function isPathAllowed(filePath) {
+    const raw = (process.env.YACH_ALLOWED_LOCAL_PATHS ?? "").trim();
+    if (!raw)
+        return false;
+    const abs = path.resolve(filePath);
+    const roots = raw.split(",").map((v) => v.trim()).filter(Boolean).map((v) => path.resolve(v));
+    return roots.some((root) => abs === root || abs.startsWith(root + "/"));
+}
 const MessagesSendSchema = Type.Object({
     conv_type: StringEnum(["1", "2"], {
         description: "会话类型：1=单聊 2=群聊（必填）",
@@ -46,6 +54,7 @@ const MessagesSendSchema = Type.Object({
     file_url: Type.Optional(Type.String({ description: "已有文件/图片 URL（msgtype=file/image 时与 file_path 二选一）" })),
     file_name: Type.Optional(Type.String({ description: "文件名（使用 file_url 时必填；使用 file_path 时自动提取）" })),
     message_id: Type.Optional(Type.String({ description: "业务去重 ID，相同 ID 不会重复投递（可选）" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险发送确认。必须传 true 才会执行。" })),
 });
 export function createImMessagesSendTool() {
     return {
@@ -62,6 +71,9 @@ export function createImMessagesSendTool() {
         parameters: MessagesSendSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
+            if (params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "以用户身份发消息为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             const msgtype = params.msgtype ?? "text";
             // ── 参数校验 ───────────────────────────────────────────────────────
             if ((msgtype === "text" || msgtype === "markdown") && !params.content) {
@@ -96,6 +108,9 @@ export function createImMessagesSendTool() {
                         let url;
                         let filename;
                         if (params.file_path) {
+                            if (!isPathAllowed(params.file_path)) {
+                                throw new Error("file_path 不在允许目录内。请设置环境变量 YACH_ALLOWED_LOCAL_PATHS（逗号分隔绝对路径白名单）。");
+                            }
                             filename = path.basename(params.file_path);
                             const data = await fs.readFile(params.file_path);
                             const contentType = (mimeLookup(filename) || "application/octet-stream");

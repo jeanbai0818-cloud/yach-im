@@ -29,6 +29,7 @@ const GroupSchema = Type.Object({
     // add_members / remove_members / list_members
     group_id: Type.Optional(Type.String({ description: "群ID（add_members/remove_members/list_members 必填）" })),
     op_uid: Type.Optional(Type.String({ description: "操作用户ID（add_members/remove_members 必填）" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险操作确认。remove_members 必须传 true 才会执行。" })),
     // list_members
     page: Type.Optional(Type.Number({ description: "当前页数（list_members 可选，默认1）" })),
     count: Type.Optional(Type.Number({ description: "每页显示条数（list_members 可选，最大100，默认100）" })),
@@ -80,6 +81,9 @@ export function createGroupTool() {
                                 ok: false,
                                 error: "remove_members: group_id、member_user_ids、op_uid 为必填",
                             });
+                        }
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "remove_members 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
                         }
                         await client.invoke("yach_group_remove_members", (c) => c.group.removeMembers(params.group_id, params.member_user_ids, params.op_uid), { as: "app" });
                         return jsonResult({ ok: true });

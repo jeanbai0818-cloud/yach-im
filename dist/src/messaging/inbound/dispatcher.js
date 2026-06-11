@@ -56,11 +56,10 @@ export async function processMessage(params) {
     const rawBody = isGroup
         ? stripBotMention(resolveMessageBody(message), message.chatbotUserName)
         : resolveMessageBody(message);
-    const preview = rawBody.replace(/\s+/g, " ").slice(0, 160);
     const inboundLabel = isGroup
-        ? `Yach[${account.accountId}] message in group ${conversationId}`
-        : `Yach[${account.accountId}] DM from ${senderId}`;
-    core.system.enqueueSystemEvent(`${inboundLabel}: ${preview}`, {
+        ? `Yach inbound group message type=${String(message.msgtype ?? "unknown")}`
+        : `Yach inbound direct message type=${String(message.msgtype ?? "unknown")}`;
+    core.system.enqueueSystemEvent(`${inboundLabel} len=${rawBody.length}`, {
         sessionKey: route.sessionKey,
         contextKey: `yach:message:${toId}:${msgId}`,
     });

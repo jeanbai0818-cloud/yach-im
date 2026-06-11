@@ -2,7 +2,7 @@
 name: yach-im
 description: >
   知音楼 IM 消息能力：读取群历史消息、撤回消息。
-  以下场景必须使用此 skill：
+  以下场景可使用此 skill（必须先确认用户明确同意读取/撤回）：
   用户要查看/搜索群聊记录、统计群内信息；
   用户要撤回已发送的消息。
 ---
@@ -19,6 +19,10 @@ description: >
 
 ## yach_im_get_messages — 读取群历史消息
 
+> ⚠️ 默认只返回元数据。若需要读取消息正文，必须获得用户明确同意并传：
+> - `include_content: true`
+> - `confirm_risk: true`
+
 | 参数 | 必填 | 说明 |
 | --- | --- | --- |
 | `group_id` | 必填 | 群 ID |
@@ -26,6 +30,8 @@ description: >
 | `end_time` | 必填 | 结束时间，ISO 8601 含时区 |
 | `page_size` | 可选 | 每页条数，默认 20，最大 50 |
 | `page_token` | 可选 | 翻页令牌，首次不填，后续从响应取 |
+| `include_content` | 可选 | 是否返回消息正文，默认 `false` |
+| `confirm_risk` | 条件必填 | 当 `include_content=true` 时必须传 `true` |
 
 **返回结构**：`{ messages[], hasMore, pageToken }`
 
@@ -69,6 +75,7 @@ message send --channel yach --target 10086 --message "内容"
 | 参数 | 必填 | 说明 |
 | --- | --- | --- |
 | `msg_id` | 必填 | 要撤回的消息 ID |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认执行撤回 |
 
 ---
 

@@ -18,6 +18,30 @@ import { StringEnum } from "../helpers.js";
 import { yachLogger } from "../../core/yach-logger.js";
 import { reportError } from "../../core/reporter.js";
 const log = yachLogger("doc-summarize");
+function isAllowedDownloadUrl(url) {
+    let u;
+    try {
+        u = new URL(url);
+    }
+    catch {
+        return false;
+    }
+    if (!["http:", "https:"].includes(u.protocol))
+        return false;
+    const allowedHostsRaw = (process.env.YACH_DOC_DOWNLOAD_ALLOWED_HOSTS ?? "").trim();
+    const defaultHosts = ["tal.com", "s.tal.com", "st.tal.com", "kn.tal.com", "k.tal.com", "xesimg.com"];
+    const allowedHosts = (allowedHostsRaw
+        ? allowedHostsRaw.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean)
+        : defaultHosts);
+    const host = u.hostname.toLowerCase();
+    return allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+}
+function getMaxDownloadBytes() {
+    const n = Number(process.env.YACH_DOC_MAX_DOWNLOAD_BYTES ?? "20971520");
+    if (!Number.isFinite(n) || n <= 0)
+        return 20 * 1024 * 1024;
+    return Math.floor(n);
+}
 // ── 辅助函数 ─────────────────────────────────────────────────────────────
 /**
  * 根据 URL 判断文档类型和导出格式
@@ -81,9 +105,17 @@ async function followRedirects(url, maxRedirects = 10) {
  * 下载文件到本地临时目录
  */
 async function downloadToTempFile(url) {
+    if (!isAllowedDownloadUrl(url)) {
+        throw new Error("下载地址不在允许域名范围内。可通过 YACH_DOC_DOWNLOAD_ALLOWED_HOSTS 配置白名单。");
+    }
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`下载文件失败: ${response.status} ${response.statusText}`);
+    }
+    const contentLength = Number(response.headers.get("content-length") ?? "0");
+    const maxBytes = getMaxDownloadBytes();
+    if (contentLength > 0 && contentLength > maxBytes) {
+        throw new Error(`下载文件过大：${contentLength} bytes，超过限制 ${maxBytes} bytes`);
     }
     const contentDisposition = response.headers.get("content-disposition") || "";
     let filename = "unknown";

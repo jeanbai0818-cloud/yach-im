@@ -21,6 +21,7 @@ const RecallMessageSchema = Type.Object({
     msg_id: Type.String({
         description: "要撤回的消息 ID（必填）",
     }),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险操作确认。必须传 true 才会执行。" })),
 });
 export function createImMessageRecallTool() {
     return {
@@ -30,6 +31,9 @@ export function createImMessageRecallTool() {
         parameters: RecallMessageSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
+            if (params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "消息撤回为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             const client = createYachToolClient();
             try {
                 const result = await client.invoke("yach_im_message_recall", (c) => c.im.recallMessage({ yach_mid: params.msg_id }), { as: "app" });

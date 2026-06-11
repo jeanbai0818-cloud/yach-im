@@ -27,6 +27,7 @@ const DocAppendSchema = Type.Object({
     guid: Type.Optional(Type.String({ description: "文档 guid" })),
     kn_node_id: Type.Optional(Type.String({ description: "知识库节点 ID" })),
     content: Type.String({ description: "要追加的内容" }),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险写入确认。必须传 true 才会执行。" })),
 });
 export function createDocAppendTool() {
     return {
@@ -37,6 +38,9 @@ export function createDocAppendTool() {
         parameters: DocAppendSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
+            if (params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "文档写入为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             const client = createYachToolClient();
             const loc = { fileUrl: params.file_url, guid: params.guid, knNodeId: params.kn_node_id };
             try {
@@ -273,6 +277,7 @@ const DocSheetSchema = Type.Object({
         description: '必须是二维数组，外层为行、内层为列，即使只有一行也必须写成 [[...]] 而非 [...]。' +
             '示例：[[1,"测试","abc"],[4,5,6]]',
     }),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险写入确认。update/append 必须传 true 才会执行。" })),
 });
 export function createDocSheetTool() {
     return {
@@ -285,6 +290,9 @@ export function createDocSheetTool() {
         parameters: DocSheetSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
+            if (params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "表格写入为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             if (!params.file_url && !params.guid) {
                 return jsonResult({ ok: false, error: "file_url 和 guid 必须提供其中一个" });
             }

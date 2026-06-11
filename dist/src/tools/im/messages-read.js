@@ -36,6 +36,8 @@ const MessagesReadSchema = Type.Object({
     end_time: Type.String({ description: "查询结束时间，ISO 8601 / RFC 3339 格式含时区，例如 '2024-01-01T23:59:59+08:00'（必填）" }),
     page_size: Type.Optional(Type.Number({ description: "每页条数，默认 20，最大 50" })),
     page_token: Type.Optional(Type.String({ description: "分页令牌，从上一页 page_token 获取" })),
+    include_content: Type.Optional(Type.Boolean({ description: "是否返回消息内容。默认 false（仅返回元数据）。" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险读取确认。include_content=true 时必须传 true。" })),
 });
 export function createImMessagesReadTool() {
     return {
@@ -45,6 +47,9 @@ export function createImMessagesReadTool() {
         parameters: MessagesReadSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;
+            if (params.include_content === true && params.confirm_risk !== true) {
+                return jsonResult({ ok: false, error: "读取历史消息正文为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+            }
             const client = createYachToolClient();
             try {
                 const result = await client.invoke("yach_im_get_messages", (c) => c.im.getMessages({
@@ -54,7 +59,22 @@ export function createImMessagesReadTool() {
                     pageSize: params.page_size ?? 20,
                     pageToken: params.page_token,
                 }), { as: "app" });
-                return jsonResult(result);
+                if (params.include_content === true) {
+                    return jsonResult(result);
+                }
+                const messages = (result?.messages ?? []).map((m) => ({
+                    message_id: m.message_id,
+                    sender_id: m.sender_id,
+                    sender_name: m.sender_name,
+                    message_type: m.message_type,
+                    created_time: m.created_time,
+                }));
+                return jsonResult({
+                    messages,
+                    hasMore: result?.hasMore ?? false,
+                    pageToken: result?.pageToken ?? "",
+                    content_omitted: true,
+                });
             }
             catch (err) {
                 return handleInvokeErrorWithAutoAuth(err, undefined, { toolName: "yach_im_get_messages" });

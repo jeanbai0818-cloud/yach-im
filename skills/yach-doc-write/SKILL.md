@@ -2,7 +2,7 @@
 name: yach-doc-write
 description: >
   知音楼文档写入/创建/导入/权限管理能力，以及表格单元格内容更新与追加能力。
-  以下场景必须使用此 skill：
+  以下场景可使用此 skill（必须先确认用户明确同意执行写操作）：
   用户要新建或创建文档、表格、幻灯片、脑图（未指定平台时默认为知音楼）；
   用户要向文档追加/写入内容；
   用户要导入本地文件到知音楼；
@@ -16,6 +16,10 @@ description: >
 > - 🚫 禁止：裸输出已知标题的链接；禁止输出后再解释"忘加标题"——发现错误须在输出前修正
 
 ## 工具
+
+> ⚠️ 高风险确认规则：
+> - `yach_doc_append`、`yach_doc_sheet`、`yach_doc_admin`、`yach_doc_file(import/export)` 调用前必须让用户明确确认，并在参数中传 `confirm_risk: true`
+> - 涉及 `file_path` 的导入只允许来自受信目录（由 `YACH_ALLOWED_LOCAL_PATHS` 控制），不得尝试读取任意路径
 
 | 意图                         | 工具              | action                |
 | ---------------------------- | ----------------- | --------------------- |
@@ -39,6 +43,7 @@ description: >
 | `guid`       | 三选一 | 文档 guid，优先使用           |
 | `kn_node_id` | 三选一 | 知识库节点 ID                 |
 | `content`    | 必填   | 要追加的内容（支持 Markdown） |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认执行写入 |
 
 ## yach_doc_file — 创建/导入
 
@@ -60,6 +65,7 @@ description: >
 | `content`        | 二选一 | Markdown 文本内容（作为 .md 文件导入）                         |
 | `file_path`      | 二选一 | 本地文件路径，支持 txt/md/doc/docx/csv/xls/xlsx/ppt/pptx/xmind |
 | `parent_node_id` | 可选   | 父目录 folder guid                                             |
+| `confirm_risk`   | 必填   | 固定 `true`，表示用户已确认导入本地内容                         |
 
 ## yach_doc_admin — 权限管理
 
@@ -70,6 +76,7 @@ description: >
 | `file_url`  | 必填 | 文档链接或 guid                                          |
 | `work_code` | 必填 | 目标用户工号                                             |
 | `role`      | 必填 | `editor`=可编辑 / `reader`=可阅读 / `commentator`=可评论 |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认修改权限 |
 
 ### add_admin 添加管理员
 
@@ -108,6 +115,8 @@ description: >
 
 - `update`：覆盖写入，替换指定区域原有内容，原内容丢失
 - `append`：追加写入，在已有数据之后写入新内容到新的单元格，原有数据不受影响
+
+执行 `update` 或 `append` 前必须再次确认用户是否接受写入/覆盖影响，并传 `confirm_risk: true`。
 
 ## 典型工作流
 

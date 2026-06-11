@@ -66,6 +66,16 @@ function sanitizeBody(body, contentType) {
         return sanitizeJsonBody(body);
     return body.slice(0, 200);
 }
+function sanitizeResponseBody(body, contentType) {
+    if (!body)
+        return "";
+    const ct = (contentType ?? "").toLowerCase();
+    if (ct.includes("application/json"))
+        return sanitizeJsonBody(body);
+    if (ct.includes("application/x-www-form-urlencoded"))
+        return sanitizeFormBody(body);
+    return body.slice(0, 200);
+}
 /** 解析业务错误码：Yach 接口约定 code=0 或 code=200 为成功，其他为业务错误。 */
 function parseBusinessError(text) {
     try {
@@ -109,7 +119,8 @@ export async function oapiFetch(url, init, options) {
         },
     });
     const text = await res.clone().text();
-    log.debug(`${method} ${url} → ${res.status}`, { body: text.slice(0, 500) });
+    const safeResBody = sanitizeResponseBody(text, res.headers.get("content-type") ?? undefined);
+    log.debug(`${method} ${url.split("?")[0]} → ${res.status}`, { body: safeResBody });
     const bizErr = parseBusinessError(text);
     const bizIgnored = bizErr && options?.ignoreBizCodes?.includes(bizErr.bizCode);
     if (!res.ok || (bizErr && !bizIgnored)) {
@@ -120,7 +131,7 @@ export async function oapiFetch(url, init, options) {
             apiPath,
             bizCode: bizErr ? String(bizErr.bizCode) : undefined,
             reqBody: sanitizeBody(reqBody, contentType) ?? queryString,
-            resBody: text.slice(0, 500),
+            resBody: safeResBody,
         });
     }
     return res;

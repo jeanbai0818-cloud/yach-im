@@ -49,6 +49,21 @@ function resolveOpenclawVersion() {
 }
 const PLUGIN_VERSION = safeRequireVersion("../../../package.json");
 const OPENCLAW_VERSION = resolveOpenclawVersion();
+const ALLOWED_EXTRA_FIELDS = new Set([
+    "category",
+    "method",
+    "status",
+    "apiPath",
+    "bizCode",
+    "code",
+    "source",
+    "action",
+    "result",
+    "msgType",
+    "errorType",
+    "replies",
+    "err",
+]);
 // ── 批量队列 ──────────────────────────────────────────────────────────────────
 const MAX_BATCH = 50;
 const FLUSH_INTERVAL_MS = 30_000;
@@ -127,7 +142,7 @@ function buildEvent(level, path, message, extra) {
     }
     if (extra) {
         for (const [k, v] of Object.entries(extra)) {
-            if (v !== undefined && k !== "accountId" && k !== "msgId") {
+            if (v !== undefined && k !== "accountId" && k !== "msgId" && ALLOWED_EXTRA_FIELDS.has(k)) {
                 event[k] = scrubSensitive(v);
             }
         }

@@ -4,7 +4,7 @@
  * import — 导入文件为知识库节点（全流程：COS 上传 + 异步导入 + 轮询）
  */
 import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { extname, resolve } from "node:path";
 import { Type } from "@sinclair/typebox";
 import { jsonResult } from "openclaw/plugin-sdk/agent-runtime";
 import { createYachToolClient } from "../../core/tool-client.js";
@@ -22,6 +22,14 @@ const EXT_TO_MIME = {
     ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ".xmind": "application/octet-stream",
 };
+function isPathAllowed(filePath) {
+    const raw = (process.env.YACH_ALLOWED_LOCAL_PATHS ?? "").trim();
+    if (!raw)
+        return false;
+    const abs = resolve(filePath);
+    const roots = raw.split(",").map((v) => v.trim()).filter(Boolean).map((v) => resolve(v));
+    return roots.some((root) => abs === root || abs.startsWith(root + "/"));
+}
 const SpaceNodeSchema = Type.Object({
     action: StringEnum(["create", "move", "get_properties", "set_properties", "list", "import", "export"], {
         description: "create 在知识库中新建节点（用户只需要新建一个可编辑的文档/表格/幻灯片/思维导图，无需导入已有内容时使用）；" +
@@ -102,6 +110,7 @@ const SpaceNodeSchema = Type.Object({
         description: "节点类型过滤（list 时可选）：folder 文件夹、doc 文档、excel 表格、form 表单、ppt 幻灯片、mindmap 脑图、board 白板、md Markdown、pdf PDF",
     })),
     page_size: Type.Optional(Type.Number({ description: "每页条数（list 时可选），默认 20，最大 50" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "高风险操作确认。create/move/set_properties/import/export 必须传 true 才会执行。" })),
 });
 export function createSpaceNodeTool() {
     return {
@@ -123,6 +132,9 @@ export function createSpaceNodeTool() {
             try {
                 switch (params.action) {
                     case "import": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "import 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         if (!params.file_path && !params.content) {
                             return jsonResult({
                                 ok: false,
@@ -139,6 +151,9 @@ export function createSpaceNodeTool() {
                             let fileBuffer;
                             const filename = params.filename;
                             if (params.file_path) {
+                                if (!isPathAllowed(params.file_path)) {
+                                    throw new Error("import: file_path 不在允许目录内。请设置环境变量 YACH_ALLOWED_LOCAL_PATHS（逗号分隔绝对路径白名单）。");
+                                }
                                 fileBuffer = await readFile(params.file_path);
                             }
                             else {
@@ -167,6 +182,9 @@ export function createSpaceNodeTool() {
                         return jsonResult(result);
                     }
                     case "export": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "export 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         if (!params.kn_node_id && !params.kn_node_url) {
                             return jsonResult({
                                 ok: false,
@@ -190,6 +208,9 @@ export function createSpaceNodeTool() {
                         return jsonResult(result);
                     }
                     case "move": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "move 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         const hasSource = params.source_node_url ||
                             (params.source_topic_id && params.source_node_id);
                         const hasTarget = params.target_node_url ||
@@ -235,6 +256,9 @@ export function createSpaceNodeTool() {
                         return jsonResult(result);
                     }
                     case "create": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "create 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         if (!params.node_type) {
                             return jsonResult({
                                 ok: false,
@@ -259,6 +283,9 @@ export function createSpaceNodeTool() {
                         return jsonResult(result);
                     }
                     case "set_properties": {
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "set_properties 为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         const hasLocator = params.guid ||
                             params.kn_node_url ||
                             (params.kn_space_id && params.kn_node_id);
