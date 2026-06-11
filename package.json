@@ -1,0 +1,56 @@
+{
+  "name": "@tal/yach-im",
+  "version": "2026.6.11",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md",
+    "CLAUDE.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "deploy": "openclaw plugins install .",
+    "pack": "npm pack"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  },
+  "devDependencies": {
+    "openclaw": "2026.6.1",
+    "typescript": "^5.6.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "runtimeExtensions": [
+      "./dist/index.js"
+    ],
+    "setupEntry": "./src/setup-entry.ts",
+    "runtimeSetupEntry": "./dist/setup-entry.js",
+    "channel": {
+      "id": "yach-im",
+      "label": "Yach IM",
+      "blurb": "Connect OpenClaw to Yach instant messaging."
+    },
+    "install": {
+      "localPath": ".",
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.3.22"
+    },
+    "compat": {
+      "pluginApi": ">=2026.3.22",
+      "minGatewayVersion": "2026.3.22"
+    },
+    "build": {
+      "openclawVersion": "2026.6.1",
+      "pluginSdkVersion": "2026.6.1"
+    }
+  }
+}

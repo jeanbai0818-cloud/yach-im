@@ -1,0 +1,64 @@
+{
+  "id": "yach-im",
+  "version": "2026.6.11",
+  "name": "Yach IM",
+  "description": "OpenClaw chat channel plugin for Yach.",
+  "kind": "channel",
+  "channels": [
+    "yach-im"
+  ],
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "defaultAccountId": {
+        "type": "string"
+      }
+    }
+  },
+  "channelConfigs": {
+    "yach-im": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "appKey": {
+            "type": "string"
+          },
+          "appSecret": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "appKey",
+          "appSecret",
+          "baseUrl"
+        ]
+      },
+      "uiHints": {
+        "appKey": {
+          "label": "Yach appKey"
+        },
+        "appSecret": {
+          "label": "Yach appSecret",
+          "sensitive": true
+        },
+        "baseUrl": {
+          "label": "Yach API URL"
+        }
+      }
+    }
+  }
+}
