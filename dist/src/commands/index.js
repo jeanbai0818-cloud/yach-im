@@ -90,7 +90,7 @@ export async function runYachDoctor(config) {
     const accountIds = listYachAccountIds(config);
     const sections = [];
     // 环境信息
-    sections.push(`## 知音楼 OpenClaw 诊断报告`, ``, `**时间：** ${new Date().toISOString()}`, `**版本：** v${getPluginVersion()}`, `**Node：** ${process.version}`, `**平台：** ${os.platform()} ${os.arch()}`, ``);
+    sections.push(`## 知音楼 OpenClaw 诊断报告`, ``, `> ⚠️ 本诊断会使用已配置的应用凭据向知音楼发起探针请求以验证连通性。`, ``, `**时间：** ${new Date().toISOString()}`, `**版本：** v${getPluginVersion()}`, `**Node：** ${process.version}`, `**平台：** ${os.platform()} ${os.arch()}`, ``);
     // 账号配置
     sections.push(`### 账号配置`);
     if (accountIds.length === 0) {

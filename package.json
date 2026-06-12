@@ -1,6 +1,6 @@
 {
   "name": "@tal/yach-im",
-  "version": "2026.6.11-9",
+  "version": "2026.6.12",
   "description": "OpenClaw Yach (知音楼) channel plugin — optimized fork",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,8 +27,8 @@
     "node-fetch": "^2.7.0",
     "pdf-parse": "^1.1.4",
     "tesseract.js": "^7.0.0",
-    "ws": "^8.19.0",
-    "xlsx": "^0.18.5"
+    "ws": "^8.21.0",
+    "xlsx": "^0.20.3"
   },
   "peerDependencies": {
     "openclaw": ">=2026.6.1"

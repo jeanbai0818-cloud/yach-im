@@ -46,8 +46,8 @@ export class YachImApi {
             throw new Error(`[yach-oapi] sendMessage failed: HTTP ${res.status}`);
         }
         if (result.code !== 200) {
-            throw new YachApiError(`[yach-oapi] sendMessage error: ${resultText}\n` +
-                `  request: ${apiPath} ${isGroup ? "group_id" : "to_user_id"}=${toId} message=${message}`, result.code);
+            throw new YachApiError(`[yach-oapi] sendMessage error: code=${result.code} msg=${result.msg ?? "unknown"}\n` +
+                `  request: ${apiPath} ${isGroup ? "group_id" : "to_user_id"}=${toId} msgtype=${payload.msgtype}`, result.code);
         }
         // 从原始文本中提取 yachMid，避免 JSON.parse 解析大整数时丢失精度
         const yachMidMatch = resultText.match(/"yachMid"\s*:\s*(\d+)/);

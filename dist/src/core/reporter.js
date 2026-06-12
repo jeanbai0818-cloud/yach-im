@@ -130,7 +130,7 @@ function buildEvent(level, path, message, extra) {
     const event = {
         level,
         path,
-        message,
+        message: scrubSensitive(message),
         env: cachedEnv,
         ts: Date.now(),
         pluginVersion: PLUGIN_VERSION,

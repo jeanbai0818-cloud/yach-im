@@ -79,7 +79,13 @@ async function maybeCreateDynamicAgentUnsafe(params) {
     log(`yach: creating dynamic agent "${agentId}" for ${peerKind}:${peerId}`);
     log(`  workspace: ${workspace}`);
     log(`  agentDir: ${agentDir}`);
-    // 创建目录
+    // 创建目录（仅在 ~/.openclaw/ 下的受控路径，无需用户审批）
+    const safePrefix = resolveUserPath("~/.openclaw/");
+    if (!workspace.startsWith(safePrefix) || !agentDir.startsWith(safePrefix)) {
+        log(`yach: dynamic agent path outside safe prefix, skipping creation for ${agentId}`);
+        reportEvent("channel.dynamic-agent", "path outside safe prefix", { accountId, peerId, peerKind, workspace, agentDir });
+        return { created: false, updatedCfg: cfg };
+    }
     await fs.promises.mkdir(workspace, { recursive: true });
     await fs.promises.mkdir(agentDir, { recursive: true });
     // 写入更新后的配置

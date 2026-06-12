@@ -84,6 +84,7 @@ description: >
 | ----------- | ---- | --------------- |
 | `file_url`  | 必填 | 文档链接或 guid |
 | `work_code` | 必填 | 目标用户工号    |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认修改权限 |
 
 ### remove_collaborator 移除协作者
 
@@ -92,6 +93,7 @@ description: >
 | `file_url`                | 必填     | 文档链接或 guid                       |
 | `collaborator_work_codes` | 至少一个 | 工号列表，如 `["10086", "10087"]`     |
 | `collaborator_dept_ids`   | 至少一个 | 部门 ID 列表（数字），如 `[101, 102]` |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认移除操作 |
 
 ### remove_admin 移除管理员
 
@@ -100,6 +102,7 @@ description: >
 | `file_url`  | 必填     | 文档链接或 guid       |
 | `work_code` | 至少一个 | 管理员工号            |
 | `depart_id` | 至少一个 | 管理员部门 ID（数字） |
+| `confirm_risk` | 必填 | 固定 `true`，表示用户已确认移除操作 |
 
 ## yach_doc_sheet — 表格操作说明
 
@@ -122,15 +125,15 @@ description: >
 
 ```
 # 新建文档并写入内容
-yach_doc_file { action: "create_blank", doc_type: "newdoc", name: "Q2复盘" }
+yach_doc_file { action: "create_blank", doc_type: "newdoc", name: "Q2复盘", confirm_risk: true }
 → { guid: "xxx", url: "..." }
-yach_doc_append { guid: "xxx", content: "## 正文内容" }
+yach_doc_append { guid: "xxx", content: "## 正文内容", confirm_risk: true }
 
 # 导入本地文件为文档
-yach_doc_file { action: "import", filename: "报告.docx", file_path: "/tmp/报告.docx" }
+yach_doc_file { action: "import", filename: "报告.docx", file_path: "/tmp/报告.docx", confirm_risk: true }
 
 # 给同事加编辑权限
-yach_doc_admin { action: "add_collaborator", file_url: "...", work_code: "10086", role: "editor" }
+yach_doc_admin { action: "add_collaborator", file_url: "...", work_code: "10086", role: "editor", confirm_risk: true }
 ```
 
 ## ⚠️ 链接呈现规范（回复前再确认一次）

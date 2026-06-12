@@ -61,6 +61,7 @@ const CalendarSchema = Type.Object({
     }, { description: "自定义重复规则（设置 repeat 时填写）" })),
     // cancel
     reason: Type.Optional(Type.String({ description: "取消原因（cancel 可选，不传则静默取消）" })),
+    confirm_risk: Type.Optional(Type.Boolean({ description: "创建/修改/取消日程为高风险操作，必须显式传 true 才执行" })),
 });
 export function createCalendarTool() {
     return {
@@ -123,6 +124,9 @@ export function createCalendarTool() {
                         if (!params.title || !params.start_time || !params.end_time) {
                             return jsonResult({ ok: false, error: "create: title、start_time、end_time 为必填" });
                         }
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "create: 创建日程为高风险操作。请显式传 confirm_risk=true 进行确认。" });
+                        }
                         const result = await client.invoke("yach_calendar_create", (c) => c.calendar.createSchedule({
                             title: params.title,
                             start_time: isoToUnix(params.start_time),
@@ -143,6 +147,9 @@ export function createCalendarTool() {
                     case "update": {
                         if (!params.schedule_id) {
                             return jsonResult({ ok: false, error: "update: schedule_id 为必填" });
+                        }
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "update: 修改日程为高风险操作。请显式传 confirm_risk=true 进行确认。" });
                         }
                         const result = await client.invoke("yach_calendar_update", (c) => c.calendar.updateSchedule({
                             schedule_id: params.schedule_id,
@@ -166,6 +173,9 @@ export function createCalendarTool() {
                     case "cancel": {
                         if (!params.schedule_id) {
                             return jsonResult({ ok: false, error: "cancel: schedule_id 为必填" });
+                        }
+                        if (params.confirm_risk !== true) {
+                            return jsonResult({ ok: false, error: "cancel: 取消日程为高风险操作。请显式传 confirm_risk=true 进行确认。" });
                         }
                         await client.invoke("yach_calendar_cancel", (c) => c.calendar.cancelSchedule({
                             schedule_id: params.schedule_id,

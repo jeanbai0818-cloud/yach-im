@@ -13,7 +13,7 @@ export async function resolveYachMediaList(params) {
         const maxBytes = 30 * 1024 * 1024;
         const media = await loadWebMedia(url, {
             maxBytes,
-            ssrfPolicy: { hostnameAllowlist: ["*.zhiyinlou.com"], allowPrivateNetwork: true },
+            ssrfPolicy: { hostnameAllowlist: ["*.zhiyinlou.com"], allowPrivateNetwork: false },
         });
         const saved = await core.channel.media.saveMediaBuffer(media.buffer, media.contentType, "inbound", maxBytes, fileName);
         log?.(`[yach] downloaded ${msgtype} media → ${saved.path}`);
