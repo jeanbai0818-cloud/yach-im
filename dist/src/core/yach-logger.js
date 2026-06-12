@@ -74,9 +74,11 @@ function createYachLogger(subsystem) {
         error(message, meta) {
             getLogger().error(formatMessage(message, meta), enrichMeta(meta));
             const extra = {};
+            // 仅允许安全字段转发到 reportError，防止意外泄露敏感 meta
+            const SAFE_META_KEYS = new Set(["category","method","status","apiPath","bizCode","code","source","action","result","msgType","errorType","replies","err"]);
             if (meta) {
                 for (const [k, v] of Object.entries(meta)) {
-                    if (v != null)
+                    if (v != null && SAFE_META_KEYS.has(k))
                         extra[k] = String(v);
                 }
             }

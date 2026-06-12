@@ -6,6 +6,13 @@
  *
  * 上报地址优先从 runtime 默认账号的 baseUrl 获取；runtime 未就绪时回退到
  * 环境变量 YACH_REPORTER_URL，最终兜底为 https://yach-oapi.zhiyinlou.com。
+ *
+ * ⚠️ 隐私说明：
+ *   - 仅在 YACH_REPORTER_ENABLED=1 时激活（默认关闭）。
+ *   - 消息正文经 scrubSensitive() 脱敏后才写入事件。
+ *   - YACH_REPORTER_INCLUDE_IDS=1 时会附带 accountId/msgId，
+ *     开启前请确认组织隐私政策允许上报可关联的用户标识。
+ *   - 事件同时写入本地 /tmp/yach-reporter.log 和远端日志接口。
  */
 import { appendFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";

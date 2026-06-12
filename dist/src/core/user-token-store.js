@@ -139,6 +139,9 @@ const linuxBackend = {
     },
 };
 // ── Windows 后端（AES-256-GCM 加密文件）──────────────────────────────────
+// ⚠️ SECURITY NOTE: Windows 无 OS keychain 集成时，master key 与加密令牌
+//    存储在同一用户目录下。这仅提供静态混淆而非 OS 级凭据保护。
+//    任何能读取该目录的本地进程均可解密令牌。
 const WIN32_UAT_DIR = join(process.env.LOCALAPPDATA ?? join(process.env.USERPROFILE ?? homedir(), "AppData", "Local"), "openclaw-yach-uat");
 const WIN32_MASTER_KEY_PATH = join(WIN32_UAT_DIR, "master.key");
 function win32SafeFileName(account) {

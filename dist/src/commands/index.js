@@ -43,7 +43,7 @@ export function runYachStart(config) {
                 warnings.push(`⚠️ 账号 "${accountId}" 已禁用`);
             }
             else {
-                lines.push(`✅ 账号 "${accountId}" 已配置（appKey: ${account.appKey?.slice(0, 6)}***）`);
+                lines.push(`✅ 账号 "${accountId}" 已配置`);
             }
         }
     }
@@ -120,7 +120,7 @@ export async function runYachDoctor(config) {
                 const msg = err instanceof Error ? err.message : String(err);
                 connectStatus = `❌ API 连通失败: ${msg}`;
             }
-            sections.push(`- **${accountId}**: ✅ 已配置`, `  - appKey: \`${account.appKey?.slice(0, 6)}***\``, `  - baseUrl: \`${account.baseUrl}\``, `  - 连通性: ${connectStatus}`);
+            sections.push(`- **${accountId}**: ✅ 已配置`, `  - baseUrl: \`${account.baseUrl}\``, `  - 连通性: ${connectStatus}`);
         }
     }
     sections.push(``);
