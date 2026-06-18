@@ -8,7 +8,6 @@ import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { createRequire } from "node:module";
 import fetch from "node-fetch";
 import { Type } from "@sinclair/typebox";
 import { jsonResult } from "openclaw/plugin-sdk/agent-runtime";
@@ -191,30 +190,29 @@ async function parseFileContent(filepath, ext) {
     }
     if (ext === ".xlsx") {
         try {
-            const require = createRequire(import.meta.url);
-            const xlsx = require("xlsx");
-            const workbook = xlsx.read(fileBuffer);
+            const { default: ExcelJS } = await import("exceljs");
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(fileBuffer);
             let text = "";
-            for (const sheetName of workbook.SheetNames) {
-                const worksheet = workbook.Sheets[sheetName];
-                const rows = xlsx.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    raw: false,
+            workbook.eachSheet((worksheet, _sheetId) => {
+                const sheetName = worksheet.name;
+                const rows = [];
+                worksheet.eachRow({ includeEmpty: false }, (row) => {
+                    rows.push(row.values.slice(1).map((c) => String(c ?? "")));
                 });
                 if (rows.length === 0) {
                     text += `## ${sheetName}（空表）\n\n`;
-                    continue;
+                    return;
                 }
                 const totalRows = rows.length - 1;
                 const cols = rows[0].length;
                 text += `## ${sheetName}（共 ${totalRows} 行 × ${cols} 列）\n\n`;
                 for (const row of rows) {
-                    const cells = row;
-                    text += cells.map((c) => String(c ?? "")).join(",") + "\n";
+                    text += row.join(",") + "\n";
                 }
                 text += "\n";
-                return text;
-            }
+            });
+            if (text) return text;
         }
         catch (err) {
             log.error("parseFileContent error", { err, filepath, ext });

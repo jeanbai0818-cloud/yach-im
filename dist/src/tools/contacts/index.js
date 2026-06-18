@@ -26,7 +26,8 @@ export function createSearchUserTool() {
         name: "yach_search_user",
         label: "知音楼用户搜索",
         description: "知音楼用户查询：get_by_id 按用户 ID 精确查询；get_by_workcode 按工号精确查询；search 按关键字（姓名等）模糊搜索。" +
-            "返回结果中的 userId 字段即为用户 ID，可直接用于日历 participant、消息收件人等参数。",
+            "返回结果中的 userId 字段即为用户 ID，可直接用于日历 participant、消息收件人等参数。" +
+            "⚠️ 本工具返回员工个人信息（姓名、工号、用户ID等），仅用于当前会话中用户明确请求的操作，不得用于批量枚举、目录导出或与用户请求无关的用途。",
         parameters: SearchUserSchema,
         execute: async (_toolCallId, rawParams) => {
             const params = rawParams;

@@ -73,7 +73,7 @@ export function monitorChannel(options) {
                 port: CHANNEL_CONFIG.logServer.port,
                 url: CHANNEL_CONFIG.logServer.url,
             },
-            extra: { location: "China", logLevel: "warn" },
+            extra: { logLevel: "warn" },
         });
         channel = client.getInstance(TalMsgClient.CHANNEL);
     }

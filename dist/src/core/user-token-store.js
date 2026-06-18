@@ -150,6 +150,11 @@ function win32SafeFileName(account) {
 async function ensureWin32CredDir() {
     await mkdir(WIN32_UAT_DIR, { recursive: true });
 }
+// ⚠️ SECURITY NOTE (Windows): master key and encrypted tokens share the same
+// user-accessible directory. Any local process that can read %LOCALAPPDATA%
+// can recover the tokens. This is obfuscation, not OS-level credential protection.
+// Use only in environments where you trust all local processes running as the
+// same Windows user. On macOS/Linux the plugin uses the Keychain / mode-0600 files.
 async function getWin32MasterKey() {
     try {
         const key = await readFile(WIN32_MASTER_KEY_PATH);
@@ -160,6 +165,8 @@ async function getWin32MasterKey() {
     await ensureWin32CredDir();
     const key = randomBytes(MASTER_KEY_BYTES);
     await writeFile(WIN32_MASTER_KEY_PATH, key);
+    // Best-effort: restrict read access on NTFS (ignored on FAT32 / network shares)
+    try { await chmod(WIN32_MASTER_KEY_PATH, 0o600); } catch { /* not supported */ }
     return key;
 }
 const win32Backend = {
@@ -178,6 +185,7 @@ const win32Backend = {
         await ensureWin32CredDir();
         const filePath = join(WIN32_UAT_DIR, win32SafeFileName(account));
         await writeFile(filePath, encryptData(data, key));
+        try { await chmod(filePath, 0o600); } catch { /* not supported */ }
     },
     async remove(_service, account) {
         try {

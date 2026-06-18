@@ -1,7 +1,32 @@
+import { createHmac } from "node:crypto";
 import { readJsonBodyWithLimit } from "openclaw/plugin-sdk/infra-runtime";
 import { registerPluginHttpRoute, registerWebhookTarget, resolveSingleWebhookTarget, resolveWebhookTargets, } from "openclaw/plugin-sdk/webhook-ingress";
 import { handleInboundMessage } from "../messaging/inbound/handler.js";
 import { reportError } from "../core/reporter.js";
+
+// Yach sends X-Yach-Signature: sha256=<hex> computed over timestamp+appKey+nonce+body
+// with the appSecret as the HMAC key, and X-Yach-Timestamp within ±5 minutes.
+const WEBHOOK_TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
+
+function verifyYachSignature(req, rawBody, appSecret) {
+    const sig = req.headers["x-yach-signature"] ?? req.headers["x-tal-signature"] ?? "";
+    const ts = req.headers["x-yach-timestamp"] ?? req.headers["x-tal-timestamp"] ?? "";
+    const nonce = req.headers["x-yach-nonce"] ?? req.headers["x-tal-nonce"] ?? "";
+    // If the provider sends no signature header at all, reject — don't silently allow unsigned.
+    if (!sig || !ts) return false;
+    const tsNum = Number(ts);
+    if (!Number.isFinite(tsNum)) return false;
+    if (Math.abs(Date.now() - tsNum) > WEBHOOK_TIMESTAMP_TOLERANCE_MS) return false;
+    const payload = ts + appSecret + nonce + rawBody;
+    const expected = createHmac("sha256", appSecret).update(payload, "utf8").digest("hex");
+    const prefix = "sha256=";
+    const received = sig.startsWith(prefix) ? sig.slice(prefix.length) : sig;
+    // Constant-time compare to prevent timing attacks
+    if (expected.length !== received.length) return false;
+    const a = Buffer.from(expected, "hex");
+    const b = Buffer.from(received, "hex");
+    return a.length === b.length && Buffer.compare(a, b) === 0;
+}
 const YACH_MAX_BODY_BYTES = 1 * 1024 * 1024; // 1 MB
 function rejectNonPostWebhookRequest(req, res) {
     if ((req.method ?? "GET").toUpperCase() === "POST")
@@ -78,6 +103,16 @@ async function handleYachWebhookRequest(req, res) {
     if (!bodyResult.ok) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "invalid request body" }));
+        return true;
+    }
+    // Verify the request actually came from Yach before touching any business logic.
+    const rawBodyStr = typeof bodyResult.rawBody === "string"
+        ? bodyResult.rawBody
+        : (bodyResult.rawBody ? Buffer.from(bodyResult.rawBody).toString("utf8") : JSON.stringify(bodyResult.value));
+    if (!verifyYachSignature(req, rawBodyStr, account.appSecret)) {
+        logger.warn("[yach] webhook signature verification failed for account " + account.accountId + " — rejecting request");
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid signature" }));
         return true;
     }
     const raw = bodyResult.value;
