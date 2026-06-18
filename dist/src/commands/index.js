@@ -64,24 +64,17 @@ export function runYachConfig(args) {
         const currentArea = configManager.getVersionArea();
         return (`## 知音楼配置\n\n` +
             `**当前版本区域：** \`${currentArea}\`\n\n` +
-            `用法：\n` +
-            `  /yach config show     — 显示当前配置\n` +
-            `  /yach config set <值> — 设置版本区域\n` +
-            `  /yach config reload   — 从文件重新加载配置`);
+            `如需修改配置，请直接编辑 openclaw 配置文件后运行 \`openclaw gateway restart\`。`);
     }
-    if (sub === "set") {
-        const value = args?.trim().split(/\s+/).slice(1).join(" ");
-        if (!value) {
-            return "❌ 请提供要设置的值。用法：/yach config set <值>";
-        }
-        configManager.setVersionArea(value);
-        return `✅ 已设置版本区域为：\`${value}\``;
+    // set/reload previously mutated runtime state via chat commands without any
+    // authorization boundary — any user who can send a command could redirect
+    // API traffic or trigger config reloads. These paths are removed; changes
+    // must go through the config file + gateway restart instead.
+    if (sub === "set" || sub === "reload") {
+        return (`⚠️ \`/yach config ${sub}\` 已停用。\n\n` +
+            `运行时配置变更请直接编辑 openclaw 配置文件，然后执行：\n\`\`\`\nopenclaw gateway restart\n\`\`\``);
     }
-    if (sub === "reload") {
-        configManager.reload();
-        return `✅ 已重新加载配置文件`;
-    }
-    return "❌ 未知子命令。用法：/yach config show|set|reload";
+    return "❌ 未知子命令。用法：/yach config show";
 }
 // ---------------------------------------------------------------------------
 // /yach doctor — 完整诊断
@@ -124,6 +117,11 @@ export async function runYachDoctor(config) {
         }
     }
     sections.push(``);
+    // SDK persistence notice
+    sections.push(`### 本地持久化说明`, ``);
+    sections.push(`- **SDK Client ID**：tal-msg-sdk 在 \`~/.talmsg/client-id\` 生成持久化客户端标识用于 IM 长连接。该文件可手动删除，删除后下次启动会重新生成。`);
+    sections.push(`- **OAuth Token**：macOS 存于系统 Keychain；Linux 存于 \`~/.local/share/openclaw-yach-uat/\`（mode 0600）；Windows 存于 \`%LOCALAPPDATA%\\openclaw-yach-uat\\\`（AES-256-GCM 加密，master key 与令牌同目录，仅静态混淆）。`);
+    sections.push(``);
     return sections.join("\n");
 }
 // ---------------------------------------------------------------------------
@@ -134,7 +132,7 @@ function getHelp() {
         `用法：\n` +
         `  /yach start  — 快速检查账号配置\n` +
         `  /yach doctor — 完整诊断（账号 + API 连通性）\n` +
-        `  /yach config — 配置管理（show、set、reload）\n` +
+        `  /yach config — 显示当前配置（只读）\n` +
         `  /yach help   — 显示此帮助`);
 }
 // ---------------------------------------------------------------------------

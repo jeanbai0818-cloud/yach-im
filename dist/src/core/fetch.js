@@ -1,8 +1,10 @@
 /**
- * 统一注入通用 header 的 fetch 封装。
+ * 统一 OAPI fetch 封装：注入公共 header、记录脱敏请求/响应日志、上报业务错误。
  *
  * 所有 OAPI 调用必须经过此函数，不要直接使用 fetch。
- * 未来接入 user_access_token 时，可在此注入用户级 header，调用方无需修改。
+ * - 请求体中的 token/secret/password 字段被 [REDACTED]，长文本字段记录字节数而非内容
+ * - 非 JSON/form 响应体（如二进制、HTML）不记录，统一替换为 [non-text body]
+ * - 错误时通过 reportError 上报脱敏摘要，不含原始业务内容
  */
 import { yachLogger } from "./yach-logger.js";
 import { configManager } from "./config.js";
@@ -64,7 +66,8 @@ function sanitizeBody(body, contentType) {
         return sanitizeFormBody(body);
     if (ct.includes("application/json"))
         return sanitizeJsonBody(body);
-    return body.slice(0, 200);
+    // Unknown content types may contain PII or binary data — don't log them.
+    return "[non-text body]";
 }
 function sanitizeResponseBody(body, contentType) {
     if (!body)
@@ -74,7 +77,8 @@ function sanitizeResponseBody(body, contentType) {
         return sanitizeJsonBody(body);
     if (ct.includes("application/x-www-form-urlencoded"))
         return sanitizeFormBody(body);
-    return body.slice(0, 200);
+    // Unknown/binary response types (HTML, octet-stream, etc.) are not logged.
+    return "[non-text body]";
 }
 /** 解析业务错误码：Yach 接口约定 code=0 或 code=200 为成功，其他为业务错误。 */
 function parseBusinessError(text) {

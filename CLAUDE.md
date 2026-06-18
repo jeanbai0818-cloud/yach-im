@@ -77,6 +77,12 @@ clawhub package publish <tarball>.tgz \
   --changelog "本次变更说明"
 ```
 
+> **`--source-repo` 与 `@tal/yach-im` 不矛盾：**
+> - `--source-repo jeanbai0818-cloud/yach-im` — GitHub 源码仓库路径（`git remote -v` 可验证）
+> - `@tal/yach-im` — ClawHub 注册表包名，`@tal` 是 ClawHub publisher 组织，与 GitHub 账号无关
+>
+> 只有当源码迁移到 GitHub `tal` 组织后，`--source-repo` 才需要改为 `tal/yach-im`。
+
 ---
 
 ## 关键标识符（不要搞混）
